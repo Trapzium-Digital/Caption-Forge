@@ -1,0 +1,90 @@
+{
+  "format": "cfproject",
+  "schemaVersion": 3,
+  "id": "proj_render",
+  "name": "Fixture",
+  "createdAt": "2026-09-30T14:35:54.452Z",
+  "updatedAt": "2026-09-30T14:35:54.452Z",
+  "composition": {
+    "width": 320,
+    "height": 240,
+    "fps": 30
+  },
+  "media": [],
+  "primaryVideoId": null,
+  "captionTracks": [
+    {
+      "id": "track_e8f12b4ef9c64eda",
+      "name": "Captions",
+      "language": "und",
+      "cues": [
+        {
+          "id": "a",
+          "startMs": 100,
+          "endMs": 1200,
+          "text": "This is the most important thing"
+        },
+        {
+          "id": "b",
+          "startMs": 1300,
+          "endMs": 1900,
+          "text": "Rendered locally"
+        }
+      ]
+    }
+  ],
+  "activeCaptionTrackId": "track_e8f12b4ef9c64eda",
+  "captionStyle": {
+    "styleId": "bold-pop",
+    "templateId": null,
+    "config": {
+      "fontFamily": "Inter",
+      "fontWeight": 800,
+      "fontSize": 82,
+      "letterSpacing": 0,
+      "lineHeight": 1.08,
+      "textTransform": "uppercase",
+      "normalColor": "#FFFFFF",
+      "activeColor": "#00E676",
+      "anchor": "bottom-center",
+      "xOffset": 0,
+      "yOffset": 0.12,
+      "maxWidth": 0.82,
+      "maxLines": 2,
+      "outline": true,
+      "outlineWidth": 2,
+      "outlineColor": "#000000",
+      "shadow": true,
+      "shadowBlur": 14,
+      "shadowOpacity": 0.55,
+      "shadowColor": "#000000",
+      "background": "none",
+      "backgroundColor": "#000000",
+      "backgroundOpacity": 0.55,
+      "backgroundRadius": 22,
+      "enterAnimation": "fade-rise",
+      "activeAnimation": "pop",
+      "exitAnimation": "fade-drop",
+      "enterDurationMs": 180,
+      "activeDurationMs": 220,
+      "exitDurationMs": 140,
+      "popScale": 1.12,
+      "activeScaleWithEffects": false,
+      "glowStrength": 1,
+      "pillPadding": 0.12,
+      "pillRadius": 0.14,
+      "underlineThickness": 0.09
+    }
+  },
+  "captionLayer": {
+    "keyframes": []
+  },
+  "safeArea": {
+    "preset": "universal",
+    "top": 0.1,
+    "bottom": 0.14,
+    "left": 0.06,
+    "right": 0.12
+  },
+  "audioTracks": []
+}

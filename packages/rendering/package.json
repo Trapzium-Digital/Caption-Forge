@@ -1,0 +1,19 @@
+{
+  "name": "@captionforge/rendering",
+  "version": "0.32.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@captionforge/caption-styles": "*",
+    "@captionforge/project-format": "*",
+    "remotion": "4.0.530",
+    "@remotion/bundler": "4.0.530",
+    "@remotion/renderer": "4.0.530",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "@captionforge/captions": "*"
+  }
+}
