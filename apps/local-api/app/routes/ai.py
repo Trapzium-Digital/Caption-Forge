@@ -79,6 +79,15 @@ def start_translation(body: TranslateBody, queue: JobQueue = Depends(get_queue))
     return queue.enqueue("translation", {"from": body.sourceLanguage, "to": body.targetLanguage, "texts": body.texts}, body.projectId)
 
 
+@router.post("/install", status_code=202)
+def install_ai(queue: JobQueue = Depends(get_queue)) -> dict:
+    """'Enable AI captions': download and install the AI runtime (~1.1 GB) in the background."""
+    running = [j for j in queue.list(limit=20) if j["kind"] == "ai-install" and j["status"] in ("queued", "running")]
+    if running:
+        return running[0]
+    return queue.enqueue("ai-install", {})
+
+
 @router.put("/settings")
 def save_settings(body: AiSettingsBody, db: Database = Depends(get_db)) -> dict:
     """Stored only in the local database; used only to download the speaker-detection model."""

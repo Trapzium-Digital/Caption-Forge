@@ -8,18 +8,23 @@
     "packages/*"
   ],
   "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "start": "node scripts/start.mjs",
     "dev": "node scripts/dev.mjs",
     "dev:web": "npm run dev -w @captionforge/web",
-    "dev:api": "cd apps/local-api && .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8756 --reload",
-    "setup:api": "cd apps/local-api && python3 -m venv .venv && .venv/bin/pip install -q --upgrade pip && .venv/bin/pip install -q -r requirements.txt",
+    "dev:api": "node scripts/api.mjs",
+    "setup:api": "node scripts/setup.mjs",
+    "setup:ai": "node scripts/setup.mjs ai",
     "build": "npm run build -w @captionforge/web",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present && npm run test:api",
-    "test:api": "cd apps/local-api && .venv/bin/python -m pytest -q",
-    "setup:ai": "bash scripts/setup-ai.sh"
+    "test:api": "node scripts/api.mjs test"
   },
   "devDependencies": {
     "typescript": "~6.0.2",
     "vitest": "^4.1.11"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

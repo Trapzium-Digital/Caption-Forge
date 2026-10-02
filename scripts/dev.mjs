@@ -13,13 +13,14 @@ const API_PORT = process.env.CAPTIONFORGE_API_PORT ?? '8756'
 const WEB_URL = 'http://127.0.0.1:5173'
 
 if (!existsSync(python)) {
-  console.error('Local API is not set up yet. Run:  npm run setup:api')
+  console.error('Local API is not set up yet. Run:  npm run setup')
   process.exit(1)
 }
 
 const children = []
 function run(name, cmd, args, cwd, color) {
-  const child = spawn(cmd, args, { cwd, env: process.env, stdio: ['ignore', 'pipe', 'pipe'] })
+  // npm is a .cmd script on Windows and needs a shell there.
+  const child = spawn(cmd, args, { cwd, env: process.env, stdio: ['ignore', 'pipe', 'pipe'], shell: platform() === 'win32' && cmd === 'npm' })
   const prefix = `\x1b[${color}m[${name}]\x1b[0m `
   const pipe = (stream, out) =>
     stream.on('data', (buf) => {

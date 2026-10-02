@@ -205,8 +205,28 @@ def register_workers(queue: JobQueue, settings: Settings) -> None:
             raise ValueError("Translation returned the wrong number of lines")
         return {"from": ctx.payload["from"], "to": ctx.payload["to"], **result}
 
+    def ai_install(ctx: JobContext) -> dict:
+        from ..config import default_home
+        from ..services import ai_install as installer
+
+        runtime = default_home() / "runtime" if settings.home == default_home() else settings.home / "runtime"
+
+        def on_event(stage: str, progress: float, message: str) -> None:
+            ctx.report(stage, progress)
+
+        try:
+            result = installer.install(runtime, on_event, ctx.cancel_requested)
+        except installer.InstallError as exc:
+            if ctx.cancel_requested():
+                raise JobCancelled() from exc
+            raise ValueError(str(exc)) from exc
+        finally:
+            ai.reset_cache()
+        return result
+
     queue.register("waveform", waveform)
     queue.register("translation", translation)
+    queue.register("ai-install", ai_install)
     queue.register("thumbnail", thumbnail)
     queue.register("transcription", transcription)
     queue.register("render", render)

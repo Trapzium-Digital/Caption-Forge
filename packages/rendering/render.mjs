@@ -8,12 +8,11 @@
  * Progress is written to stdout as JSON lines: {"stage": "...", "progress": 0..1}
  */
 import { spawn } from 'node:child_process'
-import { createReadStream, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs'
+import { createReadStream, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { createServer } from 'node:http'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { bundle } from '@remotion/bundler'
 import { ensureBrowser, renderFrames, renderMedia, selectComposition } from '@remotion/renderer'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -62,11 +61,20 @@ async function main() {
   await ensureBrowser({ onBrowserDownload: () => ({ onProgress: ({ percent }) => emit({ stage: 'preparing', progress: percent * 0.5 }) }) })
 
   emit({ stage: 'bundling', progress: 0 })
-  const serveUrl = await bundle({
-    entryPoint: join(here, 'src', 'index.ts'),
-    outDir: job.cacheDir ? join(job.cacheDir, 'remotion-bundle') : undefined,
-    onProgress: (p) => emit({ stage: 'bundling', progress: p / 100 }),
-  })
+  // The installed app ships a pre-built composition (bundle/); development builds it on demand.
+  const prebuilt = process.env.CAPTIONFORGE_REMOTION_BUNDLE || join(here, 'bundle')
+  let serveUrl
+  if (existsSync(join(prebuilt, 'index.html'))) {
+    serveUrl = prebuilt
+    emit({ stage: 'bundling', progress: 1 })
+  } else {
+    const { bundle } = await import('@remotion/bundler')
+    serveUrl = await bundle({
+      entryPoint: join(here, 'src', 'index.ts'),
+      outDir: job.cacheDir ? join(job.cacheDir, 'remotion-bundle') : undefined,
+      onProgress: (p) => emit({ stage: 'bundling', progress: p / 100 }),
+    })
+  }
 
   let media = null
   if (job.videoPath && !transparent) media = await serveFile(job.videoPath)
@@ -123,14 +131,17 @@ async function renderPngMov({ composition, serveUrl, inputProps, output, cacheDi
       onStart: () => undefined,
       onFrameUpdate: (rendered) => emit({ stage: 'rendering', progress: rendered / composition.durationInFrames }),
     })
-    const frames = readdirSync(frameDir).filter((f) => f.endsWith('.png'))
+    const frames = readdirSync(frameDir).filter((f) => /^element-\d+\.png$/.test(f)).sort()
     if (frames.length === 0) throw new Error('No frames were rendered')
+    // Frames are element-<zero-padded frame>.png. Use a numbered pattern (glob input is not
+    // available in Windows FFmpeg builds).
+    const digits = frames[0].match(/^element-(\d+)\.png$/)[1]
     emit({ stage: 'encoding', progress: 0 })
     await ffmpeg([
       '-v', 'error', '-y',
       '-framerate', String(composition.fps),
-      '-pattern_type', 'glob',
-      '-i', join(frameDir, 'element-*.png'),
+      '-start_number', String(Number(digits)),
+      '-i', join(frameDir, `element-%0${digits.length}d.png`),
       '-c:v', 'png',
       '-pix_fmt', 'rgba',
       output,

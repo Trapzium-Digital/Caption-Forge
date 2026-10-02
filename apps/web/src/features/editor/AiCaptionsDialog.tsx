@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { api, type AiStatus, type Job, type MediaAsset, type Transcript } from '@/lib/api'
 import { activeTrack, useEditor } from '@/store/editor'
+import { EnableAi } from './EnableAi'
 
 const LANGUAGES: [string, string][] = [
   ['auto', 'Detect automatically'],
@@ -181,17 +182,7 @@ export function AiCaptionsDialog({
 
         {statusError && <p className="text-sm text-destructive">{statusError}</p>}
 
-        {status && !status.available && (
-          <div className="space-y-2 rounded-lg border border-border p-3 text-sm">
-            <p className="font-medium">The local AI runtime is not installed yet.</p>
-            <p className="text-muted-foreground">
-              In the CaptionForge folder run <code className="rounded bg-muted px-1">npm run setup:ai</code> (one-time, about 1-2 GB), then check again.
-            </p>
-            <Button size="sm" variant="outline" onClick={loadStatus}>
-              <RefreshCw /> Check again
-            </Button>
-          </div>
-        )}
+        {status && !status.available && <EnableAi onReady={loadStatus} />}
 
         {status?.available && (
           <div className="space-y-5">

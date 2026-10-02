@@ -1,96 +1,70 @@
-# CaptionForge
+<p align="center">
+  <img src="apps/web/public/favicon.svg" width="88" alt="CaptionForge logo">
+</p>
 
-A local-first caption editor. The browser is the editor; media processing, storage and (later) AI transcription and rendering all run on your computer. See [the master plan](<CaptionForge_Web_App_Master_Plan (1).md>).
+<h1 align="center">CaptionForge</h1>
 
-## Quick start
+<p align="center">
+  Professional social-media captions, made on your own computer.<br>
+  Edit in your browser · AI captions with exact word timing · 10 caption styles · Renders for TikTok, Reels, Shorts and Premiere Pro
+</p>
 
-Requirements: Node.js 20+, Python 3.9+, FFmpeg/FFprobe (`brew install ffmpeg`).
+---
 
-```bash
-npm install          # web app + shared packages
-npm run setup:api    # Python venv for the local API
-npm run dev          # starts API + web UI and opens http://127.0.0.1:5173
-```
+CaptionForge is a **local-first** caption editor. The editor runs in your web browser, but everything else — your videos, AI transcription, translation and rendering — runs **on your computer**. Nothing is uploaded, no account is needed, and once installed it works offline.
 
-Data lives in the OS application-data folder (macOS: `~/Library/Application Support/CaptionForge/`). Set `CAPTIONFORGE_HOME=/some/folder` to use a different workspace.
+## Features
 
-## Tests
+- **10 social caption styles** — Bold Pop, Karaoke, Highlight, Creator, Punch, Minimal, Word-by-Word, Podcast, News / Commentary and Cinematic Social — each fully customisable and saveable as a template.
+- **AI captions** — automatic transcription with WhisperX: every word gets an exact timestamp (median error 18 ms), language detection, optional speaker detection.
+- **Translation** — turn your captions into 49 languages (offline, Argos Translate), as a separate caption track.
+- **Precise editing** — timeline with waveform, drag / trim / split captions, word emphasis, speakers, keyframes, safe areas for every platform, undo / redo, autosave.
+- **Export** — MP4 with captions burned in, **transparent ProRes 4444 or QuickTime PNG for Premiere Pro / Final Cut / DaVinci Resolve**, transparent WebM, SRT and VTT.
+- **Private by design** — your media never leaves your computer.
 
-```bash
-npm test             # TypeScript package tests (Vitest) + API tests (pytest)
-npm run typecheck
-```
+## Get CaptionForge
 
-## Layout
+Choose the way that suits you:
 
-```text
-apps/
-  web/                React + TypeScript + Vite, Tailwind CSS + shadcn/ui
-    src/features/     home (projects), editor (preview, timeline, inspector, media bin), runtime
-    src/store/        Zustand editor store (undo/redo) + playback clock
-  local-api/          FastAPI + SQLite
-    app/routes/       /api/health, runtime, projects, media, jobs, transcriptions, renders
-    app/jobs.py       SQLite-backed job queue (survives restarts, cancellable)
-    app/workers/      waveform + thumbnail workers; transcription/render interfaces
-packages/
-  project-format/     canonical .cfproject schema (zod), factory, migrations (v1 -> v2)
-  captions/           SRT/VTT import/export, timecodes, split/merge/trim, word timing
-  caption-styles/     the caption engine shared by preview AND export: style registry (Bold Pop),
-                      measurement, phrase-aware wrapping + paging, animation, keyframes, safe areas
-  rendering/          Remotion composition + render.mjs (uses caption-styles unchanged)
-scripts/dev.mjs       one-command launcher
-```
+| | Who it's for | How |
+|---|---|---|
+| **1. Download the app** | Everyone | Download the installer for Mac (`.dmg`) or Windows (`-setup.exe`) from the [Releases page](../../releases) and install it like any other app. → [Desktop app guide](docs/DESKTOP-APP.md) |
+| **2. Install from GitHub — Mac** | People comfortable downloading a folder from GitHub | Download this repository and double-click **`Install CaptionForge (Mac).command`**. → [Mac guide](docs/INSTALL-MAC.md) |
+| **3. Install from GitHub — Windows** | Same, on Windows 10 / 11 | Download this repository and double-click **`Install CaptionForge (Windows).bat`**. → [Windows guide](docs/INSTALL-WINDOWS.md) |
 
-## Local API security
+AI captions are optional. They add about 1.1 GB, so they are **not** included in the first download — click **Enable AI captions** inside the app whenever you want them.
 
-The API binds to `127.0.0.1` only, rejects non-localhost `Host` headers (DNS-rebinding protection), and requires a per-install token (stored in the workspace as `api-token`, mode 0600) on every `/api` call except `/api/health`. In development the Vite proxy attaches the token, so the browser never handles it. Subprocesses use argument lists, never shell strings; uploaded filenames are sanitised and paths are checked to stay inside the workspace.
+## How big is it?
 
-## Status (v32 — local web architecture)
+| | Download | On disk |
+|---|---|---|
+| CaptionForge app (editor, all styles, rendering) | ~210 MB | ~680 MB |
+| + AI captions (WhisperX, translation engine) | +1.1 GB | +1.1 GB |
+| + Speech model (Small; Medium 1.5 GB / Large 3 GB optional) | +465 MB | +465 MB |
+| + Word-timing model, per spoken language | +360 MB | +360 MB |
+| + Translation pack, per target language | ~140 MB | ~140 MB |
 
-Done:
-- Monorepo, shared project format with versioned migrations, captions engine
-- Local API: SQLite (schema migrations), projects + version checkpoints, streamed media import with FFprobe validation, waveform/thumbnail background jobs, runtime diagnostics
-- Editor: projects screen, resizable editor layout, video preview with styled captions + karaoke, canvas timeline (move/trim/split/add, frame + playhead snapping, zoom, waveform), caption list, style inspector, undo/redo, autosave, keyboard shortcuts
-- Export: SRT, VTT, portable `.cfproject.json`
+Models download once, the first time you use them, and then work offline.
 
-Bold Pop (first social caption style):
-- Word-timed active word (accent color + controlled 1.12x pop; also Bounce/Glow/Highlight/Underline), fade-rise enter, fade-drop exit
-- Phrase-aware balanced wrapping (max lines, no orphans, no line ending on "the/to/of…"), long cues paged by word timing
-- 9-point anchor + offsets inside platform safe areas (TikTok / Reels / Shorts / custom), max width
-- Outline, shadow, soft or pill background; full inspector; caption-layer keyframes (X, Y, scale, rotation, opacity, blur, glow, font size)
-- Templates: save, apply, update, duplicate, create variant, rename, delete
-- Remotion render (MP4, transparent WebM) with the same renderer as the preview, verified with FFprobe
-- The first render downloads Chrome Headless Shell (~100 MB) once.
+## Documentation
 
-Karaoke (second style, same engine):
-- Whole caption stays visible; the spoken word lights up with a gentle 1.00 → 1.06 → 1.00 pop
-- Highlight modes: Color, Color + Pop, Pill, Underline, Glow (with pill padding/radius, underline thickness, glow strength)
-- Dedicated Highlight section in the inspector; project schema v3 (older projects migrate automatically, Bold Pop unchanged)
+- [Desktop app (installers)](docs/DESKTOP-APP.md)
+- [Install from GitHub on Mac](docs/INSTALL-MAC.md)
+- [Install from GitHub on Windows](docs/INSTALL-WINDOWS.md)
+- [User guide](docs/USER-GUIDE.md)
+- [AI captions & translation](docs/AI-CAPTIONS.md)
+- [For developers: development, tests, building installers](docs/DEVELOPMENT.md)
+- [Product master plan](docs/MASTER-PLAN.md)
 
-All ten social caption styles (one engine, one renderer for preview and export):
-- Bold Pop, Karaoke, Highlight, Creator, Punch, Minimal, Word-by-Word, Podcast, News / Commentary, Cinematic Social
-- Each style is a preset in `packages/caption-styles/src/registry.ts` (defaults + which inspector sections it shows)
-- Engine features: reveal modes (whole cue / words as spoken / one group at a time), manual word emphasis
-  (Important / Primary / Secondary, set in the Caption tab), speaker labels + per-speaker colors,
-  band and bar backgrounds, overshoot / blur / wipe entrances, scale-down / blur exits
-- Project schema v4 (older projects and templates migrate automatically; Bold Pop and Karaoke unchanged)
+## Your data
 
-AI captions (WhisperX, fully local):
-- `npm run setup:ai` installs a private Python 3.12 + WhisperX/PyTorch into `runtime/` (nothing system-wide)
-- Editor: **AI captions** -> model (Small / Medium / Large Turbo / Large), language (auto or chosen), optional
-  speaker detection (needs a free Hugging Face token, stored locally), formatting (Social / Podcast / Cinematic / Custom)
-- Every word gets an exact timestamp (measured median error 18 ms); models download once into the workspace `models/`
-- "Re-format last transcription" re-splits captions without re-processing
-- Until a video is transcribed, word timing follows the speech in the waveform (speech-aware estimate)
+Projects, imported media, renders and AI models are stored in your user folder — not in the app or this repository:
 
-Translation and duplication:
-- **Translate** (above the caption list) creates a new caption track in another language, offline with Argos Translate /
-  OPUS-MT (49 languages from English, ~100 MB pack each, downloaded once). Timing is kept per caption.
-- Caption tracks: switch, rename, delete. The active track is what the preview shows, SRT/VTT export and the renderer use.
-- **Duplicate** (project menu) copies a project; video files are shared, not copied, and only deleted with their last user.
+- **macOS:** `~/Library/Application Support/CaptionForge/`
+- **Windows:** `%APPDATA%\CaptionForge\`
 
-Next (per the plan):
-- v35: proxies for 4K media, render cache
-- Porting the v1–v31 prototype features (Animation Lab, layers, brand kits, Font Studio, audio tracks) and importing old projects
+Imported videos are copied there; your original files are never modified.
 
-Keyboard: Space play/pause · ←/→ frame step (Shift = 10) · S split · M merge with next · ⌫ delete · ⌘Z / ⇧⌘Z undo/redo · ⌘S save checkpoint
+## License and third-party software
+
+CaptionForge uses open-source components including FFmpeg, WhisperX (OpenAI Whisper), PyTorch, Argos Translate / OPUS-MT and Remotion. **Remotion is free for individuals and companies with up to 3 people; larger companies need a [Remotion company license](https://www.remotion.dev/license).** Check the licences of these components before distributing CaptionForge commercially.

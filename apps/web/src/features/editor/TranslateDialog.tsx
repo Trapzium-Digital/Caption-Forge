@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { api, type Job, type TranslateLanguages } from '@/lib/api'
 import { activeTrack, useEditor } from '@/store/editor'
+import { EnableAi } from './EnableAi'
 
 const STAGES: Record<string, string> = {
   queued: 'Queued',
@@ -33,6 +34,7 @@ export function TranslateDialog({ open, onOpenChange }: { open: boolean; onOpenC
   const [to, setTo] = useState('fr')
   const [job, setJob] = useState<Job | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const [reload, setReload] = useState(0)
 
   useEffect(() => {
     if (!open) return
@@ -45,7 +47,7 @@ export function TranslateDialog({ open, onOpenChange }: { open: boolean; onOpenC
         setError(null)
       })
       .catch((err: Error) => setError(err.message))
-  }, [open, source.language])
+  }, [open, source.language, reload])
 
   useEffect(() => () => clearTimeout(timer.current), [])
 
@@ -123,7 +125,11 @@ export function TranslateDialog({ open, onOpenChange }: { open: boolean; onOpenC
           </DialogDescription>
         </DialogHeader>
 
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {error && /not installed/i.test(error) ? (
+          <EnableAi onReady={() => setReload((n) => n + 1)} />
+        ) : (
+          error && <p className="text-sm text-destructive">{error}</p>
+        )}
         {!langs && !error && (
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" /> Loading languages…

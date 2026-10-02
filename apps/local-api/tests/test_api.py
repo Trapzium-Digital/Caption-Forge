@@ -300,3 +300,39 @@ def test_duplicate_project_shares_media_safely(client: TestClient, sample_video)
     # Deleting the last user removes the file.
     client.delete(f"/api/projects/{copy['id']}")
     assert client.get(f"/api/media/{new_media}/file").status_code == 404
+
+
+def test_production_mode_serves_web_app_with_token_cookie(tmp_path, monkeypatch):
+    """Production mode: the API serves the built app and hands the browser the token as a strict cookie."""
+    from fastapi.testclient import TestClient as Client
+
+    from app.main import create_app
+
+    web = tmp_path / "web"
+    (web / "assets").mkdir(parents=True)
+    (web / "index.html").write_text("<html>CaptionForge</html>")
+    (web / "assets" / "app.js").write_text("console.log(1)")
+    monkeypatch.setenv("CAPTIONFORGE_STATIC", str(web))
+    with Client(create_app(home=tmp_path / "home")) as c:
+        page = c.get("/")
+        assert page.status_code == 200 and "CaptionForge" in page.text
+        cookie = page.headers["set-cookie"].lower()
+        assert "captionforge_token=" in cookie and "httponly" in cookie and "samesite=strict" in cookie
+        assert c.get("/assets/app.js").text == "console.log(1)"
+        assert "CaptionForge" in c.get("/project/abc").text  # client-side route
+        # The cookie alone authorises API calls; without it they are refused.
+        assert c.get("/api/projects").status_code == 200
+        c.cookies.clear()
+        assert c.get("/api/projects").status_code == 401
+        assert c.get("/", headers={"host": "evil.example"}).status_code == 403
+
+
+def test_ai_runtime_location_prefers_workspace(tmp_path, monkeypatch):
+    from app.services import ai, ai_install
+
+    monkeypatch.delenv("CAPTIONFORGE_AI_PYTHON", raising=False)
+    monkeypatch.setenv("CAPTIONFORGE_HOME", str(tmp_path))
+    workspace_python = ai_install.env_python(tmp_path / "runtime")
+    workspace_python.parent.mkdir(parents=True)
+    workspace_python.write_text("")
+    assert ai.ai_python() == workspace_python

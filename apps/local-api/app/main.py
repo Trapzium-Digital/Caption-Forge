@@ -16,6 +16,7 @@ from .db import Database
 from .jobs import JobQueue
 from .routes import ai, jobs, media, projects, system, templates
 from .security import load_or_create_token, make_guard
+from .static import mount_web_app, static_dir
 from .workers import register_workers
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -48,6 +49,9 @@ def create_app(home: Optional[Path] = None, start_workers: bool = True) -> FastA
     app.middleware("http")(make_guard(token))
     for module in (system, projects, media, jobs, templates, ai):
         app.include_router(module.router)
+    web = static_dir()
+    if web is not None:  # production / packaged mode: serve the built web app too
+        mount_web_app(app, web)
     return app
 
 

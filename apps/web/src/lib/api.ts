@@ -197,6 +197,7 @@ export const api = {
   deleteTemplate: (id: string) => request<void>(`/templates/${id}`, { method: 'DELETE' }),
 
   aiStatus: () => request<AiStatus>('/ai'),
+  installAi: () => request<Job>('/ai/install', { method: 'POST' }),
   saveAiSettings: (hfToken: string | null) => request<{ hfTokenSet: boolean }>('/ai/settings', json('PUT', { hfToken })),
   startTranscription: (projectId: string, options: TranscriptionOptions) =>
     request<Job>('/transcriptions', json('POST', { projectId, payload: options })),

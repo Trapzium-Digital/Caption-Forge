@@ -7,4 +7,6 @@ __pycache__/
 .DS_Store
 *.tsbuildinfo
 .captionforge-dev/
-runtime/
+/runtime/
+/dist-app/
+dist-package.log

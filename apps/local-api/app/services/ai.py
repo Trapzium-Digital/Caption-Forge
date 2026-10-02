@@ -11,8 +11,10 @@ from typing import Callable, Optional
 from .media import MediaError
 
 REPO = Path(__file__).resolve().parents[4]
-WORKER = REPO / "apps" / "ai-worker" / "transcribe.py"
-TRANSLATE_WORKER = REPO / "apps" / "ai-worker" / "translate.py"
+# The installed app ships the workers elsewhere (CAPTIONFORGE_AI_WORKERS).
+WORKERS_DIR = Path(os.environ.get("CAPTIONFORGE_AI_WORKERS") or REPO / "apps" / "ai-worker")
+WORKER = WORKERS_DIR / "transcribe.py"
+TRANSLATE_WORKER = WORKERS_DIR / "translate.py"
 
 # name, label, approximate download size (MB), relative speed / accuracy notes
 MODELS = [
@@ -25,8 +27,23 @@ MODEL_NAMES = {m["name"] for m in MODELS}
 
 
 def ai_python() -> Path:
+    """The AI runtime's Python: explicit override, the workspace runtime (installed by
+    'Enable AI captions'), or a legacy runtime/ folder in the repository."""
     override = os.environ.get("CAPTIONFORGE_AI_PYTHON")
-    return Path(override) if override else REPO / "runtime" / "ai" / "bin" / "python"
+    if override:
+        return Path(override)
+    from ..config import default_home
+    from .ai_install import env_python
+
+    workspace = env_python(default_home() / "runtime")
+    if workspace.exists():
+        return workspace
+    legacy = env_python(REPO / "runtime")
+    return legacy if legacy.exists() else workspace
+
+
+def reset_cache() -> None:
+    _versions_cache.update(at=0.0, value=None)
 
 
 _versions_cache: dict = {"at": 0.0, "value": None}
