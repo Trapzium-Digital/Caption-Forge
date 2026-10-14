@@ -55,7 +55,10 @@ async function main() {
       ? { codec: 'prores', proResProfile: '4444', imageFormat: 'png', pixelFormat: 'yuva444p10le' }
       : job.format === 'webm-alpha'
         ? { codec: 'vp9', imageFormat: 'png', pixelFormat: 'yuva420p' }
-        : { codec: 'h264', crf: 18, pixelFormat: 'yuv420p' }
+        : job.quality === 'high'
+          ? // Lossless frames (no JPEG step), BT.709 like camera/phone footage, and a finer encode.
+            { codec: 'h264', crf: 15, x264Preset: 'slow', pixelFormat: 'yuv420p', imageFormat: 'png', colorSpace: 'bt709' }
+          : { codec: 'h264', crf: 18, pixelFormat: 'yuv420p' }
 
   emit({ stage: 'preparing', progress: 0 })
   await ensureBrowser({ onBrowserDownload: () => ({ onProgress: ({ percent }) => emit({ stage: 'preparing', progress: percent * 0.5 }) }) })

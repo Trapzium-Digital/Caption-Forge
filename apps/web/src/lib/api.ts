@@ -118,6 +118,7 @@ export interface TranslateLanguages {
 }
 
 export type RenderFormat = 'mp4' | 'mov-alpha' | 'mov-png' | 'webm-alpha'
+export type RenderQuality = 'standard' | 'high'
 
 export interface Waveform {
   peaksPerSecond: number
@@ -184,7 +185,8 @@ export const api = {
   listJobs: (projectId: string) => request<Job[]>(`/jobs?projectId=${encodeURIComponent(projectId)}`),
   cancelJob: (id: string) => request<Job>(`/jobs/${id}`, { method: 'DELETE' }),
   getJob: (id: string) => request<Job>(`/jobs/${id}`),
-  startRender: (projectId: string, format: RenderFormat) => request<Job>('/renders', json('POST', { projectId, payload: { format } })),
+  startRender: (projectId: string, format: RenderFormat, quality: RenderQuality = 'standard') =>
+    request<Job>('/renders', json('POST', { projectId, payload: { format, quality } })),
   renderFileUrl: (jobId: string) => `/api/renders/${jobId}/file`,
 
   listTemplates: () => request<CaptionTemplate[]>('/templates'),

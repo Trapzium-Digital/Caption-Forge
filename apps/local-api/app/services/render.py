@@ -11,6 +11,8 @@ from .media import MediaError, probe
 from .runtime import binary
 
 FORMATS = {"mp4": ".mp4", "webm-alpha": ".webm", "mov-alpha": ".mov", "mov-png": ".mov"}
+# MP4 only: "standard" is the original fast export; "high" keeps the source's detail and colour.
+QUALITIES = ("standard", "high")
 
 
 def renderer_dir() -> Path:

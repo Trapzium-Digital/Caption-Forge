@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CheckCircle2, Download, Film, Layers, Loader2, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { api, type Job, type RenderFormat } from '@/lib/api'
+import { api, type Job, type RenderFormat, type RenderQuality } from '@/lib/api'
 import { formatBytes } from '@/lib/download'
 import { useEditor } from '@/store/editor'
 
@@ -35,11 +35,27 @@ const FORMATS: { value: RenderFormat; title: string; detail: string; icon: typeo
   { value: 'webm-alpha', title: 'Transparent WebM', detail: 'Captions only, with alpha (VP9). Small files for web tools and CapCut - not Premiere.', icon: Layers },
 ]
 
+const QUALITIES: { value: RenderQuality; title: string; detail: string }[] = [
+  { value: 'high', title: 'High quality', detail: 'Keeps the detail and colour of your original. Bigger file, slower render.' },
+  { value: 'standard', title: 'Standard', detail: 'Smaller file, faster render. Slightly softer than the original.' },
+]
+
+const QUALITY_KEY = 'captionforge.renderQuality'
+
+function savedQuality(): RenderQuality {
+  try {
+    return localStorage.getItem(QUALITY_KEY) === 'standard' ? 'standard' : 'high'
+  } catch {
+    return 'high'
+  }
+}
+
 const FORMAT_LABEL: Record<string, string> = { mp4: 'MP4', 'mov-alpha': 'ProRes 4444 (alpha)', 'mov-png': 'QuickTime PNG (alpha)', 'webm-alpha': 'WebM (alpha)' }
 
 export function RenderDialog({ open, onOpenChange, save }: { open: boolean; onOpenChange: (o: boolean) => void; save: (reason: 'manual') => Promise<void> }) {
   const project = useEditor((s) => s.project)!
   const [format, setFormat] = useState<RenderFormat>('mp4')
+  const [quality, setQuality] = useState<RenderQuality>(savedQuality)
   const [job, setJob] = useState<Job | null>(null)
   const [history, setHistory] = useState<Job[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -70,7 +86,7 @@ export function RenderDialog({ open, onOpenChange, save }: { open: boolean; onOp
     setError(null)
     try {
       await save('manual') // the renderer reads the saved project
-      const created = await api.startRender(project.id, format)
+      const created = await api.startRender(project.id, format, format === 'mp4' ? quality : 'standard')
       setJob(created)
       poll(created.id)
     } catch (err) {
@@ -114,6 +130,34 @@ export function RenderDialog({ open, onOpenChange, save }: { open: boolean; onOp
           ))}
         </div>
 
+        {format === 'mp4' && (
+          <div role="radiogroup" aria-label="MP4 quality" className="grid grid-cols-2 gap-2">
+            {QUALITIES.map((q) => (
+              <button
+                key={q.value}
+                type="button"
+                role="radio"
+                aria-checked={quality === q.value}
+                disabled={Boolean(running)}
+                onClick={() => {
+                  setQuality(q.value)
+                  try {
+                    localStorage.setItem(QUALITY_KEY, q.value)
+                  } catch {
+                    // remembering the choice is only a convenience
+                  }
+                }}
+                className={`rounded-lg border p-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  quality === q.value ? 'border-primary bg-primary/10' : 'border-border hover:border-foreground/30'
+                }`}
+              >
+                <div className="text-sm font-medium">{q.title}</div>
+                <div className="text-xs text-muted-foreground">{q.detail}</div>
+              </button>
+            ))}
+          </div>
+        )}
+
         {job && (
           <div className="space-y-2 rounded-lg border border-border p-3" aria-live="polite">
             <div className="flex items-center gap-2 text-sm">
@@ -152,7 +196,10 @@ export function RenderDialog({ open, onOpenChange, save }: { open: boolean; onOp
               .map((h) => (
                 <div key={h.id} className="flex items-center gap-2 text-xs">
                   <span className="text-muted-foreground">{new Date(h.createdAt).toLocaleString()}</span>
-                  <span>{FORMAT_LABEL[String(h.payload.format)] ?? 'MP4'}</span>
+                  <span>
+                    {FORMAT_LABEL[String(h.payload.format)] ?? 'MP4'}
+                    {(h.payload.format ?? 'mp4') === 'mp4' && (h.payload.quality === 'high' ? ' · High quality' : ' · Standard')}
+                  </span>
                   <a className="ml-auto text-primary underline-offset-4 hover:underline" href={api.renderFileUrl(h.id)} download>
                     Download
                   </a>

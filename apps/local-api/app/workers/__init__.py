@@ -95,6 +95,9 @@ def register_workers(queue: JobQueue, settings: Settings) -> None:
         fmt = ctx.payload.get("format", "mp4")
         if fmt not in renderer.FORMATS:
             raise ValueError(f"Unknown render format '{fmt}'")
+        quality = ctx.payload.get("quality", "standard")
+        if quality not in renderer.QUALITIES:
+            raise ValueError(f"Unknown render quality '{quality}'")
         project_id = ctx.payload.get("projectId")
         row = queue.db.query_one("SELECT document FROM projects WHERE id = ?", (project_id,))
         if row is None:
@@ -127,6 +130,7 @@ def register_workers(queue: JobQueue, settings: Settings) -> None:
                     "videoPath": video_path,
                     "output": str(output),
                     "format": fmt,
+                    "quality": quality,
                     "durationMs": duration_ms,
                     "speech": speech,
                     "cacheDir": str(settings.dir("cache")),
@@ -157,6 +161,7 @@ def register_workers(queue: JobQueue, settings: Settings) -> None:
             job_file.unlink(missing_ok=True)
         return {
             "format": fmt,
+            "quality": quality,
             "file": output.name,
             "path": str(output),
             "sizeBytes": output.stat().st_size,

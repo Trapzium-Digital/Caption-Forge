@@ -169,6 +169,41 @@ def test_render_mp4_end_to_end(client: TestClient, sample_video):
     assert file.status_code == 200 and len(file.content) == result["sizeBytes"]
 
 
+def test_render_mp4_high_quality_keeps_bt709_colour(client: TestClient, sample_video):
+    """High quality MP4: lossless frames and BT.709 colour; unknown qualities are rejected."""
+    import json
+    import subprocess
+    from pathlib import Path
+
+    from app.services.media import binary
+    from app.services.render import renderer_available
+
+    if not renderer_available():
+        import pytest
+
+        pytest.skip("Remotion renderer not installed")
+    doc = json.loads((Path(__file__).parent / "fixtures" / "project.json").read_text())
+    client.post("/api/projects", json={"document": doc})
+    asset = client.post(
+        "/api/media/import", params={"filename": "clip.mp4", "projectId": doc["id"]}, content=sample_video.read_bytes()
+    ).json()
+    doc["primaryVideoId"] = asset["id"]
+    client.put(f"/api/projects/{doc['id']}", json={"document": doc})
+
+    bad = client.post("/api/renders", json={"projectId": doc["id"], "payload": {"format": "mp4", "quality": "ultra"}}).json()
+    job = client.post("/api/renders", json={"projectId": doc["id"], "payload": {"format": "mp4", "quality": "high"}}).json()
+    jobs = {j["id"]: j for j in wait_for_jobs(client, doc["id"], timeout=300)}
+    assert jobs[bad["id"]]["status"] == "failed" and "quality" in jobs[bad["id"]]["error"]
+    assert jobs[job["id"]]["status"] == "complete", jobs[job["id"]]["error"]
+    result = client.get(f"/api/jobs/{job['id']}").json()["result"]
+    assert result["verified"] and result["quality"] == "high"
+    colour = subprocess.run(
+        [binary("ffprobe"), "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=color_space", "-of", "csv=p=0", result["path"]],
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    assert colour == "bt709"
+
+
 def test_render_karaoke_transparent_webm(client: TestClient):
     """Karaoke (pill mode) captions-only render with a verified alpha channel."""
     import json
