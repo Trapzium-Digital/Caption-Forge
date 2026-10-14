@@ -84,4 +84,23 @@ describe('migrateProject', () => {
     expect(project.schemaVersion).toBe(4)
     expect(project.captionStyle.config).toEqual(BOLD_POP_DEFAULTS)
   })
+
+  it('keeps named safe-area presets in step with their current values', () => {
+    const project = createProject('Demo')
+    const old = { ...project, safeArea: { preset: 'universal', top: 0.1, bottom: 0.14, left: 0.06, right: 0.12 } }
+    expect(migrateProject(JSON.parse(JSON.stringify(old))).safeArea).toMatchObject({ left: 0.1, right: 0.1 })
+    const custom = { ...project, safeArea: { preset: 'custom', top: 0.1, bottom: 0.14, left: 0.06, right: 0.12 } }
+    expect(migrateProject(JSON.parse(JSON.stringify(custom))).safeArea).toMatchObject({ left: 0.06, right: 0.12 })
+  })
+
+  it('repairs fractional times instead of rejecting the project', () => {
+    const project = createProject('Demo')
+    project.captionTracks[0].cues = [
+      { id: 'c', startMs: 126360, endMs: 127357.59199999999, text: 'I want', words: [{ text: 'I', startMs: 126360.4, endMs: 126800.6 }] },
+    ]
+    project.captionLayer.keyframes = [{ id: 'k', property: 'scale', timeMs: 1000.7, value: 1.2, easing: 'linear' }]
+    const repaired = migrateProject(JSON.parse(JSON.stringify(project)))
+    expect(repaired.captionTracks[0].cues[0]).toMatchObject({ startMs: 126360, endMs: 127358, words: [{ startMs: 126360, endMs: 126801 }] })
+    expect(repaired.captionLayer.keyframes[0].timeMs).toBe(1001)
+  })
 })

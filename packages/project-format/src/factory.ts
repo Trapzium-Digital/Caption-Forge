@@ -339,7 +339,7 @@ export const CINEMATIC_DEFAULTS: CaptionStyleConfig = {
  */
 export const SAFE_AREA_PRESETS: Record<Exclude<SafeAreaPreset, 'custom'>, Omit<SafeArea, 'preset'> & { label: string }> = {
   none: { label: 'None', top: 0, bottom: 0, left: 0, right: 0 },
-  universal: { label: 'All social platforms', top: 0.1, bottom: 0.14, left: 0.06, right: 0.12 },
+  universal: { label: 'All social platforms', top: 0.1, bottom: 0.14, left: 0.1, right: 0.1 },
   tiktok: { label: 'TikTok', top: 0.09, bottom: 0.14, left: 0.05, right: 0.13 },
   reels: { label: 'Instagram Reels', top: 0.1, bottom: 0.14, left: 0.05, right: 0.12 },
   shorts: { label: 'YouTube Shorts', top: 0.08, bottom: 0.13, left: 0.05, right: 0.12 },

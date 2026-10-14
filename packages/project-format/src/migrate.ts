@@ -1,4 +1,4 @@
-import { BOLD_POP_DEFAULTS, safeAreaFromPreset } from './factory.ts'
+import { BOLD_POP_DEFAULTS, SAFE_AREA_PRESETS, safeAreaFromPreset } from './factory.ts'
 import { CURRENT_SCHEMA_VERSION, ProjectSchema, type Project } from './schema.ts'
 
 type RawProject = Record<string, unknown>
@@ -105,6 +105,45 @@ const V4_FIELDS = [
 
 export class ProjectFormatError extends Error {}
 
+/**
+ * Times are whole milliseconds. Older builds could store a fractional time (e.g. a
+ * split at the playhead, 127357.592). Round every time field so such projects still
+ * open and render, instead of failing validation.
+ */
+function repairTimes(doc: RawProject): RawProject {
+  const round = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.round(v)) : v)
+  const tracks = Array.isArray(doc.captionTracks) ? doc.captionTracks : null
+  const layer = doc.captionLayer as { keyframes?: unknown[] } | undefined
+  return {
+    ...doc,
+    ...(tracks && {
+      captionTracks: tracks.map((t: Record<string, unknown>) => ({
+        ...t,
+        cues: Array.isArray(t.cues)
+          ? t.cues.map((c: Record<string, unknown>) => ({
+              ...c,
+              startMs: round(c.startMs),
+              endMs: round(c.endMs),
+              ...(Array.isArray(c.words) && {
+                words: c.words.map((w: Record<string, unknown>) => ({ ...w, startMs: round(w.startMs), endMs: round(w.endMs) })),
+              }),
+            }))
+          : t.cues,
+      })),
+    }),
+    ...(layer && Array.isArray(layer.keyframes) && {
+      captionLayer: { ...layer, keyframes: layer.keyframes.map((k) => ({ ...(k as object), timeMs: round((k as { timeMs?: unknown }).timeMs) })) },
+    }),
+  }
+}
+
+/** A named safe-area preset always uses the current preset values; only "custom" keeps its own numbers. */
+function syncSafeAreaPreset(doc: RawProject): RawProject {
+  const preset = (doc.safeArea as { preset?: unknown } | undefined)?.preset
+  if (typeof preset !== 'string' || !(preset in SAFE_AREA_PRESETS)) return doc
+  return { ...doc, safeArea: safeAreaFromPreset(preset as keyof typeof SAFE_AREA_PRESETS) }
+}
+
 export function migrateProject(input: unknown): Project {
   if (typeof input !== 'object' || input === null) {
     throw new ProjectFormatError('Project file is not a JSON object')
@@ -113,6 +152,7 @@ export function migrateProject(input: unknown): Project {
   if (doc.format !== 'cfproject') {
     throw new ProjectFormatError('Not a CaptionForge project (missing "format": "cfproject")')
   }
+  doc = repairTimes(doc)
 
   let version = typeof doc.schemaVersion === 'number' ? doc.schemaVersion : 0
   if (version > CURRENT_SCHEMA_VERSION) {
@@ -126,6 +166,8 @@ export function migrateProject(input: unknown): Project {
     doc = step(doc)
     version += 1
   }
+
+  doc = syncSafeAreaPreset(doc)
 
   const parsed = ProjectSchema.safeParse(doc)
   if (!parsed.success) {

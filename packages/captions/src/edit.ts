@@ -34,7 +34,8 @@ export function activeWordIndex(cue: Cue, timeMs: number): number {
 }
 
 /** Split a cue at a time. Words (if any) are distributed to each side. */
-export function splitCue(cue: Cue, atMs: number): [Cue, Cue] | null {
+export function splitCue(cue: Cue, at: number): [Cue, Cue] | null {
+  const atMs = Math.round(at) // project times are whole milliseconds
   if (atMs - cue.startMs < MIN_CUE_MS || cue.endMs - atMs < MIN_CUE_MS) return null
   const words = cueWords(cue)
   let left = words.filter((w) => w.startMs < atMs)

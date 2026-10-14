@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { createId, type CaptionStyleConfig, type CaptionTrack, type Cue, type Project } from '@captionforge/project-format'
-import { mergeCues, sortCues, splitCue, MIN_CUE_MS } from '@captionforge/captions'
+import { mergeCues, snapToFrame, sortCues, splitCue, MIN_CUE_MS } from '@captionforge/captions'
 import type { MediaAsset, Waveform } from '@/lib/api'
 
 const HISTORY_LIMIT = 200
@@ -208,9 +208,11 @@ export const useEditor = create<EditorState>((set, get) => ({
     if (get().selectedCueId === id) set({ selectedCueId: null })
   },
 
-  splitSelectedAt: (ms) => {
+  splitSelectedAt: (playheadMs) => {
     const { project, selectedCueId } = get()
     if (!project) return false
+    // The playhead comes from the video clock (fractional ms); split on a frame like every other edit.
+    const ms = snapToFrame(playheadMs, project.composition.fps)
     const cues = activeTrack(project).cues
     const target = cues.find((c) => c.id === selectedCueId && ms > c.startMs && ms < c.endMs) ?? cues.find((c) => ms > c.startMs && ms < c.endMs)
     if (!target) return false

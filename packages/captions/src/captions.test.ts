@@ -87,6 +87,12 @@ describe('cue editing', () => {
     expect(mergeCues(b, a)).toMatchObject({ startMs: 0, endMs: 2000, text: cue.text })
   })
 
+  it('splits at whole milliseconds even when the playhead is fractional', () => {
+    const [a, b] = splitCue(cue, 1000.592)!
+    expect(a.endMs).toBe(1001)
+    expect(b.startMs).toBe(1001)
+  })
+
   it('refuses tiny splits', () => {
     expect(splitCue(cue, 50)).toBeNull()
   })

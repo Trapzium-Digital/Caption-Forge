@@ -123,7 +123,7 @@ describe('placement', () => {
     const box = { width: 600, height: 200 }
     const { left, top } = placeBox(comp, safe, BOLD_POP_DEFAULTS, box)
     const rect = safeRect(comp, safe)
-    expect(left + box.width / 2).toBeCloseTo(rect.x + rect.width / 2)
+    expect(left + box.width / 2).toBeCloseTo(comp.width / 2)
     expect(top + box.height).toBeCloseTo(rect.y + rect.height - 0.12 * 1920)
   })
 
@@ -134,8 +134,18 @@ describe('placement', () => {
     expect(top + 100).toBeLessThanOrEqual(rect.y + rect.height + 1e-6)
   })
 
-  it('limits caption width to the safe area', () => {
-    expect(maxCaptionWidth(comp, safe, { ...BOLD_POP_DEFAULTS, maxWidth: 1 })).toBeCloseTo(safeRect(comp, safe).width)
+  it('keeps centred captions on the frame centre with equal margins clear of the safe area', () => {
+    const rect = safeRect(comp, safe)
+    const width = maxCaptionWidth(comp, safe, { ...BOLD_POP_DEFAULTS, maxWidth: 1 })
+    expect(width).toBeCloseTo(comp.width * (1 - 2 * safe.right))
+    const { left } = placeBox(comp, safe, { anchor: 'bottom-center', xOffset: 0, yOffset: 0 }, { width, height: 100 })
+    expect(left).toBeGreaterThanOrEqual(rect.x)
+    expect(left + width).toBeLessThanOrEqual(rect.x + rect.width + 1e-6)
+    expect(left + width / 2).toBeCloseTo(comp.width / 2)
+  })
+
+  it('lets side-anchored captions use the full safe width', () => {
+    expect(maxCaptionWidth(comp, safe, { ...BOLD_POP_DEFAULTS, anchor: 'bottom-left', maxWidth: 1 })).toBeCloseTo(safeRect(comp, safe).width)
   })
 })
 

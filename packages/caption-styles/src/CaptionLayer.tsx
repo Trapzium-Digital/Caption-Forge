@@ -523,6 +523,17 @@ export function SafeAreaGuides({ project, scale = 1 }: { project: Pick<Project, 
           boxShadow: '0 0 0 100000px rgba(15, 23, 42, 0.28)',
         }}
       />
+      {/* Centre line: centred captions sit on it, even though the box is wider on the left. */}
+      <div
+        style={{
+          position: 'absolute',
+          left: project.composition.width / 2 - line / 2,
+          top: rect.y,
+          width: line,
+          height: rect.height,
+          background: 'rgba(56, 189, 248, 0.35)',
+        }}
+      />
     </div>
   )
 }
