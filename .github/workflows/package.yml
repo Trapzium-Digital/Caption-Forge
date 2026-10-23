@@ -1,11 +1,13 @@
 # Builds the installable CaptionForge apps.
 #   - Run manually: GitHub > Actions > "Package apps" > Run workflow
+#   - Or push a build/* branch for a test build (files under the run's Artifacts, no release).
 #   - Or push a version tag (v0.33.0) to also attach the files to a GitHub Release.
 name: Package apps
 
 on:
   workflow_dispatch:
   push:
+    branches: ['build/**']
     tags: ['v*']
 
 jobs:
