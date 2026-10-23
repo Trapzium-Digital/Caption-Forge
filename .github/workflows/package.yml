@@ -36,10 +36,17 @@ jobs:
       - name: Install Inno Setup (Windows installer builder)
         if: runner.os == 'Windows'
         run: choco install innosetup --no-progress -y
+      # On failure, the last lines of output become the error annotation (readable without opening the log).
       - name: Set up CaptionForge
-        run: npm run setup
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run setup 2>&1 | tee step.log || { echo "::error title=Setup failed::$(tail -n 40 step.log | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"; exit 1; }
       - name: Build the app
-        run: node scripts/package.mjs
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/package.mjs 2>&1 | tee step.log || { echo "::error title=Build failed::$(tail -n 40 step.log | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"; exit 1; }
       - uses: actions/upload-artifact@v4
         with:
           name: CaptionForge-${{ matrix.name }}
