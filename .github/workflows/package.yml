@@ -25,28 +25,46 @@ jobs:
     env:
       CAPTIONFORGE_SKIP_FFMPEG_CHECK: '1'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: Install Inno Setup (Windows installer builder)
         if: runner.os == 'Windows'
         run: choco install innosetup --no-progress -y
-      # On failure, the last lines of output become the error annotation (readable without opening the log).
+      # ci-step.sh: on failure, the last lines of output become the error annotation.
       - name: Set up CaptionForge
         shell: bash
-        run: |
-          set -o pipefail
-          npm run setup 2>&1 | tee step.log || { echo "::error title=Setup failed::$(tail -n 40 step.log | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"; exit 1; }
+        run: scripts/ci-step.sh "Setup failed" npm run setup
       - name: Build the app
         shell: bash
+        run: scripts/ci-step.sh "Build failed" node scripts/package.mjs
+
+      # Test what users get: install it, start it like the shortcut does, render an MP4.
+      - name: Install the Windows installer silently
+        if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          set -o pipefail
-          node scripts/package.mjs 2>&1 | tee step.log || { echo "::error title=Build failed::$(tail -n 40 step.log | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"; exit 1; }
+          $setup = Get-ChildItem dist-app\*-setup.exe | Select-Object -First 1
+          if (-not $setup) { echo "::error title=Installer missing::No *-setup.exe was built"; exit 1 }
+          $dir = Join-Path $env:RUNNER_TEMP 'CaptionForge'
+          $p = Start-Process -Wait -PassThru -FilePath $setup.FullName -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$dir", "/LOG=$env:RUNNER_TEMP\install.log"
+          if ($p.ExitCode -ne 0 -or -not (Test-Path "$dir\python\python.exe")) {
+            $tail = (Get-Content "$env:RUNNER_TEMP\install.log" -Tail 40) -join '%0A'
+            echo "::error title=Install failed (exit $($p.ExitCode))::$tail"; exit 1
+          }
+          echo "CF_APP=$dir" >> $env:GITHUB_ENV
+      - name: Locate the Mac app
+        if: runner.os == 'macOS'
+        run: echo "CF_APP=$PWD/dist-app/CaptionForge.app/Contents/Resources" >> "$GITHUB_ENV"
+      - name: Smoke test (start the app, import a clip, render MP4s)
+        shell: bash
+        run: scripts/ci-step.sh "Smoke test failed" node scripts/smoke-app.mjs "$CF_APP"
+
       - uses: actions/upload-artifact@v4
         with:
           name: CaptionForge-${{ matrix.name }}

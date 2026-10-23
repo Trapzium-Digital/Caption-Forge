@@ -17,15 +17,22 @@ export const yellow = color('33')
 export const red = color('31')
 export const bold = color('1')
 
+/**
+ * npm/npx are .cmd scripts on Windows and can only start through cmd.exe. Everything
+ * else (node, python, py, powershell, ffmpeg) starts directly: cmd.exe would re-parse
+ * the arguments and break quotes, "%" and paths with spaces.
+ */
+const needsShell = (cmd) => WINDOWS && /^(npm|npx)(\.cmd)?$/i.test(cmd)
+
 /** Run a command and wait. Throws with a readable message on failure. */
 export function run(cmd, args, opts = {}) {
-  const result = spawnSync(cmd, args, { stdio: 'inherit', shell: WINDOWS && !cmd.endsWith('.exe'), ...opts })
+  const result = spawnSync(cmd, args, { stdio: 'inherit', shell: needsShell(cmd), ...opts })
   if (result.status !== 0) throw new Error(`${cmd} ${args.join(' ')} failed (exit ${result.status ?? result.error?.message})`)
 }
 
 /** First line of a command's output, or null if it is not available. */
 export function probe(cmd, args) {
-  const result = spawnSync(cmd, args, { encoding: 'utf8', shell: WINDOWS })
+  const result = spawnSync(cmd, args, { encoding: 'utf8', shell: needsShell(cmd) })
   if (result.status !== 0) return null
   return (result.stdout || result.stderr || '').trim().split(/\r?\n/)[0] || ''
 }
@@ -43,7 +50,7 @@ export function findPython() {
 }
 
 export function spawnLogged(name, cmd, args, opts = {}) {
-  const child = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'], shell: WINDOWS && !cmd.endsWith('.exe'), ...opts })
+  const child = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'], shell: needsShell(cmd), ...opts })
   const prefix = `[${name}] `
   const pipe = (stream, out) =>
     stream.on('data', (buf) => {
