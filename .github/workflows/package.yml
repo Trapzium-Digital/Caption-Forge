@@ -10,6 +10,9 @@ on:
     branches: ['build/**']
     tags: ['v*']
 
+permissions:
+  contents: write   # lets a version tag publish its GitHub Release
+
 jobs:
   package:
     strategy:
@@ -77,6 +80,13 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
+          name: CaptionForge ${{ github.ref_name }}
+          body: |
+            **Windows 10 / 11:** download `CaptionForge-…-windows-x64-setup.exe` and run it. If Windows shows "Windows protected your PC", click **More info → Run anyway** (not code-signed yet). The `.zip` is a portable version that needs no install.
+            **Mac (Apple Silicon):** download the `.dmg`, drag CaptionForge to Applications. If macOS blocks it the first time: macOS 15+ → System Settings → Privacy & Security → **Open Anyway**; macOS 12–14 → right-click the app → **Open**.
+
+            AI captions are optional: click **Enable AI captions** inside the app (about 1.1 GB download).
+            Every file here was installed and tested (start the app, import a video, render MP4s) by the build before it was published.
           files: |
             dist-app/*.dmg
             dist-app/*.zip

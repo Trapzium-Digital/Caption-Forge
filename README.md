@@ -22,6 +22,17 @@ CaptionForge is a **local-first** caption editor. The editor runs in your web br
 - **Export** — MP4 with captions burned in, **transparent ProRes 4444 or QuickTime PNG for Premiere Pro / Final Cut / DaVinci Resolve**, transparent WebM, SRT and VTT.
 - **Private by design** — your media never leaves your computer.
 
+## Download
+
+<p align="center">
+  <a href="../../releases/latest"><b>⬇ Download for Windows</b></a> (CaptionForge-…-windows-x64-setup.exe)
+  &nbsp;·&nbsp;
+  <a href="../../releases/latest"><b>⬇ Download for Mac</b></a> (CaptionForge-…-mac-arm64.dmg, Apple Silicon)
+</p>
+
+**Windows:** run the downloaded `-setup.exe`. If Windows shows *"Windows protected your PC"*, click **More info → Run anyway** (the installer is not code-signed yet). No administrator rights are needed. Then open **CaptionForge** from the Start menu.
+**Mac:** open the `.dmg` and drag CaptionForge into Applications. If macOS blocks it the first time, see [opening it the first time](docs/DESKTOP-APP.md) (the app is not notarised yet).
+
 ## Get CaptionForge
 
 Choose the way that suits you:
